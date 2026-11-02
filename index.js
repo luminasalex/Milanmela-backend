@@ -29,6 +29,15 @@ const eventsCollection = db.collection("events");
 app.use(express.json());
 app.use(cors());
 
+app.post("/create-event", async (req, res) => {
+  const eventData = req.body;
+  const insertResult = await eventsCollection.insertOne(eventData);
+
+  console.log(insertResult);
+
+  res.send({ massege: "Event created successfully", result: insertResult });
+});
+
 app.get("/events", async (req, res) => {
   const cursor = await eventsCollection.find().toArray();
   res.send(cursor);
