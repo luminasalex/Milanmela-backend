@@ -55,6 +55,38 @@ app.get("/my-events/:email", async (req, res) => {
   res.send(cursor);
 });
 
+// Delete
+app.delete("/events/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 1️⃣ ID valid kina check kori
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid event ID" });
+    }
+
+    // 2️⃣ Delete kori
+    const result = await eventsCollection.deleteOne({
+      _id: new ObjectId(id),
+    });
+
+    // 3️⃣ Event na pele 404
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    // 4️⃣ Success
+    res.status(200).json({
+      success: true,
+      message: "Event deleted successfully",
+      deletedId: id,
+    });
+  } catch (error) {
+    console.error("Delete error:", error);
+    res.status(500).json({ message: "Failed to delete event" });
+  }
+});
+
 // http://localhost:5000/my-events/
 // Routes
 app.get("/", (req, res) => {
