@@ -27,7 +27,7 @@ const eventsCollection = db.collection("events");
 
 // Middleware
 app.use(express.json());
-// app.use(cors());
+app.use(cors());
 
 app.post("/create-event", async (req, res) => {
   const eventData = req.body;
