@@ -23,6 +23,7 @@ export async function connectToMongoDB() {
 const mongodbConnection = await connectToMongoDB();
 
 const db = mongodbConnection.db("Milanmela");
+const eventsCollection = db.collection("events");
 
 // Middleware
 app.use(express.json());
