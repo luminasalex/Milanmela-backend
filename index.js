@@ -43,12 +43,6 @@ app.get("/events", async (req, res) => {
   res.send(cursor);
 });
 
-app.get("/events/:id", async (req, res) => {
-  const { id } = req.params;
-  const cursor = await eventsCollection.findOne({ _id: new ObjectId(id) });
-  res.send(cursor);
-});
-
 // Routes
 app.get("/", (req, res) => {
   res.send("Server is running");
