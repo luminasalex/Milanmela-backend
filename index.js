@@ -49,6 +49,13 @@ app.get("/events/:id", async (req, res) => {
   res.send(cursor);
 });
 
+app.get("/my-events/:email", async (req, res) => {
+  const { email } = req.params;
+  const cursor = await eventsCollection.find({ creatorEmail: email }).toArray();
+  res.send(cursor);
+});
+
+// http://localhost:5000/my-events/
 // Routes
 app.get("/", (req, res) => {
   res.send("Server is running");
