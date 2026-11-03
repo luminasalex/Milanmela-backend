@@ -6,9 +6,17 @@ import { MongoClient, ObjectId } from "mongodb";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT ;
+const PORT = Number(process.env.PORT ?? 5000);
+if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) {
+  throw new Error("PORT must be a valid port number between 1 and 65535");
+}
 
-const client = new MongoClient(process.env.MONGODB_URI);
+const MONGODB_URI = process.env.MONGODB_URI;
+if (!MONGODB_URI) {
+  throw new Error("MONGODB_URI is required");
+}
+
+const client = new MongoClient(MONGODB_URI);
 
 export async function connectToMongoDB() {
   try {
@@ -16,7 +24,8 @@ export async function connectToMongoDB() {
     console.log("You successfully connected to MongoDB!");
     return client;
   } catch (err) {
-    console.dir(err);
+    console.error("Failed to connect to MongoDB:", err);
+    throw err;
   }
 }
 
