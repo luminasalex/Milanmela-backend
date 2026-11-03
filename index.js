@@ -6,7 +6,7 @@ import { MongoClient, ObjectId } from "mongodb";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT ;
 
 const client = new MongoClient(process.env.MONGODB_URI);
 
@@ -84,6 +84,61 @@ app.delete("/events/:id", async (req, res) => {
   } catch (error) {
     console.error("Delete error:", error);
     res.status(500).json({ message: "Failed to delete event" });
+  }
+});
+
+// Edit
+app.put("/events/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, date, location, price, image, category } =
+      req.body;
+
+    // 1️⃣ ID valid kina check kori
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid event ID" });
+    }
+
+    // 2️⃣ Required field validation (jei field gulo mandatory)
+    if (!title || !description || !date || !location) {
+      return res.status(400).json({
+        message: "title, description, date, and location are required",
+      });
+    }
+
+    // 3️⃣ Update data object toiri kori
+    const updatedData = {
+      title,
+      description,
+      date,
+      location,
+      price: price ?? 0,
+      image: image ?? "",
+      category: category ?? "general",
+      updatedAt: new Date(),
+    };
+
+    // 4️⃣ Update kori
+    const result = await eventsCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updatedData },
+    );
+
+    // 5️⃣ Event na pele 404
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    // 6️⃣ Success
+    res.status(200).json({
+      success: true,
+      message: "Event updated successfully",
+      updatedId: id,
+      data: updatedData,
+    });
+  } catch (error) {
+    console.error("Update error:", error);
+    res.status(500).json({ message: "Failed to update event" });
   }
 });
 
