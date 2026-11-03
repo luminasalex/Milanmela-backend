@@ -6,7 +6,7 @@ import { MongoClient, ObjectId } from "mongodb";
 dotenv.config();
 
 const app = express();
-const PORT = Number(process.env.PORT ?? 5000);
+const PORT = Number(process.env.PORT) || 5000;
 if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) {
   throw new Error("PORT must be a valid port number between 1 and 65535");
 }
