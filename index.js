@@ -94,7 +94,7 @@ app.use(async (req, res, next) => {
 
     req.authUser = {
       id: payload.sub,
-      email: payload.email.trim().toLowerCase(),
+      email: payload.email.trim(),
     };
     return next();
   } catch (error) {
@@ -136,7 +136,7 @@ app.get("/my-events", async (req, res) => {
 app.get("/joined-events", async (req, res) => {
   try {
     const joinedEvents = await eventsCollection
-      .find({ joinedBy: req.authUser.email })
+      .find({ joinedBy: req.authUser.email.toLowerCase() })
       .toArray();
     res.status(200).json(joinedEvents);
   } catch (error) {
@@ -155,7 +155,7 @@ app.post("/events/:id/join", async (req, res) => {
 
     const result = await eventsCollection.updateOne(
       { _id: new ObjectId(id) },
-      { $addToSet: { joinedBy: req.authUser.email } },
+      { $addToSet: { joinedBy: req.authUser.email.toLowerCase() } },
     );
     if (result.matchedCount === 0) {
       return res.status(404).json({ message: "Event not found" });
