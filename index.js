@@ -164,7 +164,7 @@ app.use(async (req, res, next) => {
     return next();
   } catch (error) {
     console.error("Auth token verification failed:", error);
-    return res.status(500).json({ message: "Could not verify auth token" });
+    return res.status(401).json({ message: "The auth token is invalid" });
   }
 });
 
@@ -183,7 +183,16 @@ app.post("/create-event", async (req, res) => {
 });
 
 app.get("/events", async (req, res) => {
-  const cursor = await eventsCollection.find().toArray();
+  const requestedLimit = Number(req.query.limit);
+  const limit =
+    Number.isInteger(requestedLimit) && requestedLimit > 0
+      ? Math.min(requestedLimit, 100)
+      : 100;
+  const cursor = await eventsCollection
+    .find({}, { projection: { creatorEmail: 0, joinedBy: 0 } })
+    .sort({ date: -1, _id: -1 })
+    .limit(limit)
+    .toArray();
   res.send(cursor);
 });
 
@@ -202,7 +211,14 @@ app.get("/events/upcoming", async (req, res) => {
 
 app.get("/events/:id", async (req, res) => {
   const { id } = req.params;
-  const cursor = await eventsCollection.findOne({ _id: new ObjectId(id) });
+  if (!ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid event ID" });
+  }
+
+  const cursor = await eventsCollection.findOne(
+    { _id: new ObjectId(id) },
+    { projection: { creatorEmail: 0, joinedBy: 0 } },
+  );
   res.send(cursor);
 });
 
