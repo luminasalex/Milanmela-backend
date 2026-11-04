@@ -64,6 +64,51 @@ app.get("/my-events/:email", async (req, res) => {
   res.send(cursor);
 });
 
+app.get("/joined-events/:email", async (req, res) => {
+  try {
+    const email = req.params.email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ message: "A valid email is required" });
+    }
+
+    const joinedEvents = await eventsCollection
+      .find({ joinedBy: email })
+      .toArray();
+    res.status(200).json(joinedEvents);
+  } catch (error) {
+    console.error("Joined events fetch error:", error);
+    res.status(500).json({ message: "Failed to fetch joined events" });
+  }
+});
+
+app.post("/events/:id/join", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const email =
+      typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid event ID" });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ message: "A valid email is required" });
+    }
+
+    const result = await eventsCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $addToSet: { joinedBy: email } },
+    );
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    res.status(200).json({ success: true, message: "Joined event successfully" });
+  } catch (error) {
+    console.error("Join event error:", error);
+    res.status(500).json({ message: "Failed to join event" });
+  }
+});
+
 // Delete
 app.delete("/events/:id", async (req, res) => {
   try {
