@@ -60,6 +60,71 @@ const auth = betterAuth({
   ],
 });
 
+function getTodayDate() {
+  const dateParts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Dhaka",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const dateValues = Object.fromEntries(
+    dateParts.map(({ type, value }) => [type, value]),
+  );
+  return `${dateValues.year}-${dateValues.month}-${dateValues.day}`;
+}
+
+function isFutureDate(date) {
+  if (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return false;
+  }
+
+  const parsedDate = new Date(`${date}T00:00:00.000Z`);
+  return (
+    !Number.isNaN(parsedDate.getTime()) &&
+    parsedDate.toISOString().slice(0, 10) === date &&
+    date > getTodayDate()
+  );
+}
+
+function isValidImageUrl(imageUrl) {
+  try {
+    const url = new URL(imageUrl);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function validateEventData(req, res) {
+  const { title, description, date, location, category, imageUrl } =
+    req.body ?? {};
+  if (
+    typeof title !== "string" ||
+    !title.trim() ||
+    typeof description !== "string" ||
+    !description.trim() ||
+    typeof location !== "string" ||
+    !location.trim() ||
+    typeof category !== "string" ||
+    !category.trim() ||
+    typeof imageUrl !== "string" ||
+    !isValidImageUrl(imageUrl.trim())
+  ) {
+    res.status(400).json({
+      message:
+        "Title, description, location, event type, and image URL are required",
+    });
+    return false;
+  }
+
+  if (!isFutureDate(date)) {
+    res.status(400).json({ message: "Event date must be in the future" });
+    return false;
+  }
+
+  return true;
+}
+
 // Middleware
 app.use(express.json());
 app.use(cors());
@@ -104,6 +169,8 @@ app.use(async (req, res, next) => {
 });
 
 app.post("/create-event", async (req, res) => {
+  if (!validateEventData(req, res)) return;
+
   const eventData = {
     ...req.body,
     creatorEmail: req.authUser.email,
@@ -112,12 +179,25 @@ app.post("/create-event", async (req, res) => {
 
   console.log(insertResult);
 
-  res.send({ massege: "Event created successfully", result: insertResult });
+  res.send({ message: "Event created successfully", result: insertResult });
 });
 
 app.get("/events", async (req, res) => {
   const cursor = await eventsCollection.find().toArray();
   res.send(cursor);
+});
+
+app.get("/events/upcoming", async (req, res) => {
+  const events = eventsCollection
+    .find({ date: { $gt: getTodayDate() } })
+    .sort({ date: 1 });
+  const requestedLimit = Number(req.query.limit);
+
+  if (Number.isInteger(requestedLimit) && requestedLimit > 0) {
+    events.limit(Math.min(requestedLimit, 100));
+  }
+
+  res.send(await events.toArray());
 });
 
 app.get("/events/:id", async (req, res) => {
@@ -205,6 +285,8 @@ app.delete("/events/:id", async (req, res) => {
 app.put("/events/:id", async (req, res) => {
   try {
     const { id } = req.params;
+    if (!validateEventData(req, res)) return;
+
     const {
       title,
       description,
