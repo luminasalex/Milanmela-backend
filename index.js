@@ -100,8 +100,18 @@ app.delete("/events/:id", async (req, res) => {
 app.put("/events/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, date, location, price, image, category } =
-      req.body;
+    const {
+      title,
+      description,
+      date,
+      location,
+      price,
+      image,
+      imageUrl,
+      category,
+      startTime,
+      endTime,
+    } = req.body;
 
     // 1️⃣ ID valid kina check kori
     if (!ObjectId.isValid(id)) {
@@ -122,10 +132,13 @@ app.put("/events/:id", async (req, res) => {
       date,
       location,
       price: price ?? 0,
-      image: image ?? "",
+      image: imageUrl ?? image ?? "",
+      imageUrl: imageUrl ?? image ?? "",
       category: category ?? "general",
       updatedAt: new Date(),
     };
+    if (startTime !== undefined) updatedData.startTime = startTime;
+    if (endTime !== undefined) updatedData.endTime = endTime;
 
     // 4️⃣ Update kori
     const result = await eventsCollection.updateOne(
