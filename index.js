@@ -215,11 +215,15 @@ app.get("/events/:id", async (req, res) => {
     return res.status(400).json({ message: "Invalid event ID" });
   }
 
-  const cursor = await eventsCollection.findOne(
-    { _id: new ObjectId(id) },
-    { projection: { creatorEmail: 0, joinedBy: 0 } },
-  );
-  res.send(cursor);
+  const event = await eventsCollection.findOne({ _id: new ObjectId(id) });
+  if (!event) {
+    return res.send(null);
+  }
+
+  const joinedCount = Array.isArray(event.joinedBy) ? event.joinedBy.length : 0;
+  delete event.creatorEmail;
+  delete event.joinedBy;
+  res.send({ ...event, joinedCount });
 });
 
 app.get("/my-events", async (req, res) => {
